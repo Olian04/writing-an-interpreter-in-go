@@ -1,5 +1,5 @@
-# Writing An Interpreter In Rust
-This repo documents my attempt at following the book [Writing An Interpreter In Go](https://interpreterbook.com/), but doing so in Rust.
+# Writing An Interpreter In Go
+This repo documents my attempt at following the book [Writing An Interpreter In Go](https://interpreterbook.com/).
 
 ## The Language - Monkey
 
