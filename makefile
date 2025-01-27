@@ -1,16 +1,18 @@
-default: test
+default: run
 
-t: test
-test:
-	go test -v ./...
+# Build and run project
+r: run
+run:
+	go test ./...
 
-l: lint
-lint:
-	go vet ./...
-
+# Install dependencies
 i: install
 install:
-	go mod tidy
-	go mod verify
 	go mod download
+	go mod tidy
 
+# formatting & linting
+l: lint
+lint:
+	go fmt ./**/*.go
+	go vet ./**/*.go
