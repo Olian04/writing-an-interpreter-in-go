@@ -3,7 +3,7 @@ default: run
 # Build and run project
 r: run
 run:
-	go test ./...
+	go test -v ./test/...
 
 # Install dependencies
 i: install
