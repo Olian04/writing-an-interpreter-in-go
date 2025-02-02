@@ -7,72 +7,81 @@ import (
 	"github.com/Olian04/monkey/token"
 )
 
+func RunTokenTest(t *testing.T, input string, expected []token.Token) {
+	l := lexer.NewLexer(input)
+	for _, expectedToken := range expected {
+		gotToken := l.NextToken()
+		if gotToken.Type != expectedToken.Type {
+			t.Fatalf("tok.Type is not %q. got=%q", expectedToken.Type, gotToken.Type)
+		}
+		if gotToken.Literal != expectedToken.Literal {
+			t.Fatalf("tok.Literal is not \"%q\". got=\"%q\"", expectedToken.Literal, gotToken.Literal)
+		}
+	}
+}
+
 func TestNextToken(t *testing.T) {
 	input := `=+(){},;`
-	l := lexer.NewLexer(input)
-
-	if tok := l.NextToken(); tok.Type != token.ASSIGN {
-		t.Fatalf("tok.Type is not ASSIGN. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.PLUS {
-		t.Fatalf("tok.Type is not PLUS. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.LPAREN {
-		t.Fatalf("tok.Type is not LPAREN. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.RPAREN {
-		t.Fatalf("tok.Type is not RPAREN. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.LBRACE {
-		t.Fatalf("tok.Type is not LBRACE. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.RBRACE {
-		t.Fatalf("tok.Type is not RBRACE. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.COMMA {
-		t.Fatalf("tok.Type is not COMMA. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.SEMICOLON {
-		t.Fatalf("tok.Type is not SEMICOLON. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.EOF {
-		t.Fatalf("tok.Type is not EOF. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
+	RunTokenTest(t, input, []token.Token{
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.PLUS, Literal: "+"},
+		{Type: token.LPAREN, Literal: "("},
+		{Type: token.RPAREN, Literal: ")"},
+		{Type: token.LBRACE, Literal: "{"},
+		{Type: token.RBRACE, Literal: "}"},
+		{Type: token.COMMA, Literal: ","},
+		{Type: token.SEMICOLON, Literal: ";"},
+	})
 }
 
 func TestLetExpression(t *testing.T) {
 	input := `let x = 5;`
-	l := lexer.NewLexer(input)
+	RunTokenTest(t, input, []token.Token{
+		{Type: token.LET, Literal: "let"},
+		{Type: token.IDENT, Literal: "x"},
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.SEMICOLON, Literal: ";"},
+	})
+}
 
-	if tok := l.NextToken(); tok.Type != token.LET {
-		t.Fatalf("tok.Type is not LET. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
+func TestMultilineLetExpressions(t *testing.T) {
+	input := `
+		let x = 5;
+		let y = 10;
+		let foobar = 838383;
+	`
+	RunTokenTest(t, input, []token.Token{
+		{Type: token.LET, Literal: "let"},
+		{Type: token.IDENT, Literal: "x"},
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.LET, Literal: "let"},
+		{Type: token.IDENT, Literal: "y"},
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.LET, Literal: "let"},
+		{Type: token.IDENT, Literal: "foobar"},
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.INT, Literal: "838383"},
+		{Type: token.SEMICOLON, Literal: ";"},
+	})
+}
 
-	if tok := l.NextToken(); tok.Type != token.IDENT {
-		t.Fatalf("tok.Type is not IDENT. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.ASSIGN {
-		t.Fatalf("tok.Type is not ASSIGN. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.INT {
-		t.Fatalf("tok.Type is not INT. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.SEMICOLON {
-		t.Fatalf("tok.Type is not SEMICOLON. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
-
-	if tok := l.NextToken(); tok.Type != token.EOF {
-		t.Fatalf("tok.Type is not EOF. got=%q, tok.Literal=%q", tok.Type, tok.Literal)
-	}
+func TestFunctionExpression(t *testing.T) {
+	input := `fn(x) { x + 2; }`
+	RunTokenTest(t, input, []token.Token{
+		{Type: token.FUNCTION, Literal: "fn"},
+		{Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "x"},
+		{Type: token.RPAREN, Literal: ")"},
+		{Type: token.LBRACE, Literal: "{"},
+		{Type: token.IDENT, Literal: "x"},
+		{Type: token.PLUS, Literal: "+"},
+		{Type: token.INT, Literal: "2"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.RBRACE, Literal: "}"},
+	})
 }

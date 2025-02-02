@@ -3,49 +3,22 @@ package lexer
 import (
 	"unicode"
 
+	"github.com/Olian04/monkey/lexer/string_reader"
 	"github.com/Olian04/monkey/token"
 )
 
 type Lexer struct {
-	input        string
-	readPosition int
+	sr *string_reader.StringReader
 }
 
 func NewLexer(input string) *Lexer {
 	return &Lexer{
-		input:        input,
-		readPosition: 0,
+		sr: string_reader.NewStringReader(input),
 	}
-}
-
-func (l *Lexer) readChar() rune {
-	if l.readPosition >= len(l.input) {
-		return 0
-	}
-	return rune(l.input[l.readPosition])
-}
-
-func (l *Lexer) readWord() string {
-	if l.readPosition >= len(l.input) {
-		return ""
-	}
-	i := 0
-	for l.readPosition+i < len(l.input) && !unicode.IsSpace(rune(l.input[l.readPosition+i])) {
-		i++
-	}
-	return l.input[l.readPosition : l.readPosition+i]
-}
-
-func (l *Lexer) readWhitespace() string {
-	i := 0
-	for l.readPosition+i < len(l.input) && unicode.IsSpace(rune(l.input[l.readPosition+i])) {
-		i++
-	}
-	return l.input[l.readPosition : l.readPosition+i]
 }
 
 func (l *Lexer) readSyntax() (*token.Token, bool) {
-	switch l.readChar() {
+	switch l.sr.ReadChar() {
 	case '=':
 		return &token.Token{
 			Type:    token.ASSIGN,
@@ -91,8 +64,7 @@ func (l *Lexer) readSyntax() (*token.Token, bool) {
 }
 
 func (l *Lexer) readKeyword() (*token.Token, bool) {
-	literal := l.readWord()
-	switch literal {
+	switch l.sr.ReadWord() {
 	case "let":
 		return &token.Token{
 			Type:    token.LET,
@@ -108,33 +80,28 @@ func (l *Lexer) readKeyword() (*token.Token, bool) {
 }
 
 func (l *Lexer) readValue() (*token.Token, bool) {
-	firstChar := l.readChar()
-	literal := l.readWord()
+	firstChar := l.sr.ReadChar()
 
 	switch {
 	case unicode.IsNumber(firstChar):
 		return &token.Token{
 			Type:    token.INT,
-			Literal: literal,
+			Literal: l.sr.ReadWhile(unicode.IsNumber),
 		}, true
 	case unicode.IsLetter(firstChar):
 		return &token.Token{
 			Type:    token.IDENT,
-			Literal: literal,
+			Literal: l.sr.ReadWord(),
 		}, true
 	}
 	return nil, false
 }
 
-func (l *Lexer) advance(step int) {
-	l.readPosition += step
-}
-
 func (l *Lexer) NextToken() token.Token {
-	whitespace := l.readWhitespace()
-	l.advance(len(whitespace))
+	whitespace := l.sr.ReadWhitespace()
+	l.sr.AdvanceReadHead(len(whitespace))
 
-	if l.readPosition >= len(l.input) {
+	if l.sr.IsEOF() {
 		return token.Token{
 			Type:    token.EOF,
 			Literal: "",
@@ -142,20 +109,20 @@ func (l *Lexer) NextToken() token.Token {
 	}
 
 	if tok, ok := l.readSyntax(); ok {
-		l.advance(len(tok.Literal))
+		l.sr.AdvanceReadHead(len(tok.Literal))
 		return *tok
 	}
 	if tok, ok := l.readKeyword(); ok {
-		l.advance(len(tok.Literal))
+		l.sr.AdvanceReadHead(len(tok.Literal))
 		return *tok
 	}
 	if tok, ok := l.readValue(); ok {
-		l.advance(len(tok.Literal))
+		l.sr.AdvanceReadHead(len(tok.Literal))
 		return *tok
 	}
 
-	literal := l.readWord()
-	l.advance(len(literal))
+	literal := l.sr.ReadWord()
+	l.sr.AdvanceReadHead(len(literal))
 	return token.Token{
 		Type:    token.ILLEGAL,
 		Literal: literal,
