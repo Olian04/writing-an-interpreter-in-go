@@ -16,13 +16,13 @@ type Tester interface {
 }
 
 func RunTokenTest(t Tester, lexer Lexer, expected []token.Token) {
-	for _, expectedToken := range expected {
+	for index, expectedToken := range expected {
 		gotToken := lexer.NextToken()
 		if gotToken.Type != expectedToken.Type {
-			t.Fatalf("tok.Type is not %q. got=%q", expectedToken.Type, gotToken.Type)
+			t.Fatalf("Expected token.Type to be %q but got %q at index %d", expectedToken.Type, gotToken.Type, index)
 		}
 		if gotToken.Literal != expectedToken.Literal {
-			t.Fatalf("tok.Literal is not \"%q\". got=\"%q\"", expectedToken.Literal, gotToken.Literal)
+			t.Fatalf("Expected token.Literal to be %q but got %q at index %d", expectedToken.Literal, gotToken.Literal, index)
 		}
 	}
 }
