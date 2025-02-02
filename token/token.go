@@ -14,7 +14,9 @@ const (
 	IDENTIFIER TokenType = "IDENTIFIER" // add, foobar, x, y, ...
 	INT        TokenType = "INT"        // 123456
 
-	EQUAL     TokenType = "="
+	ASSIGN    TokenType = "="
+	GT        TokenType = ">"
+	LT        TokenType = "<"
 	PLUS      TokenType = "+"
 	MINUS     TokenType = "-"
 	ASTERISK  TokenType = "*"
@@ -23,8 +25,11 @@ const (
 	COMMA     TokenType = ","
 	SEMICOLON TokenType = ";"
 
-	LT     TokenType = "<"
-	GT     TokenType = ">"
+	EQ    TokenType = "=="
+	NEQ   TokenType = "!="
+	LT_EQ TokenType = "<="
+	GT_EQ TokenType = ">="
+
 	LPAREN TokenType = "("
 	RPAREN TokenType = ")"
 	LBRACE TokenType = "{"

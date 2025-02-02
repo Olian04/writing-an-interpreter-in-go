@@ -30,7 +30,7 @@ func RunTokenTest(t Tester, lexer Lexer, expected []token.Token) {
 func TestNextToken(t *testing.T) {
 	input := `=+(){},!-/*5;5<10>5`
 	RunTokenTest(t, lexer.New(input), []token.Token{
-		{Type: token.EQUAL, Literal: "="},
+		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.PLUS, Literal: "+"},
 		{Type: token.LPAREN, Literal: "("},
 		{Type: token.RPAREN, Literal: ")"},
@@ -67,21 +67,26 @@ func TestLexer(t *testing.T) {
 		} else {
 			return false;
 		}
+
+		3 != 5;
+		4 == 4;
+		5 <= 10;
+		10 >= 5;
 	`
 	RunTokenTest(t, lexer.New(input), []token.Token{
 		{Type: token.LET, Literal: "let"},
 		{Type: token.IDENTIFIER, Literal: "five"},
-		{Type: token.EQUAL, Literal: "="},
+		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.INT, Literal: "5"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.LET, Literal: "let"},
 		{Type: token.IDENTIFIER, Literal: "ten"},
-		{Type: token.EQUAL, Literal: "="},
+		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.INT, Literal: "10"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.LET, Literal: "let"},
 		{Type: token.IDENTIFIER, Literal: "add"},
-		{Type: token.EQUAL, Literal: "="},
+		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.FUNCTION, Literal: "fn"},
 		{Type: token.LPAREN, Literal: "("},
 		{Type: token.IDENTIFIER, Literal: "x"},
@@ -97,7 +102,7 @@ func TestLexer(t *testing.T) {
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.LET, Literal: "let"},
 		{Type: token.IDENTIFIER, Literal: "result"},
-		{Type: token.EQUAL, Literal: "="},
+		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.IDENTIFIER, Literal: "add"},
 		{Type: token.LPAREN, Literal: "("},
 		{Type: token.IDENTIFIER, Literal: "five"},
@@ -122,5 +127,21 @@ func TestLexer(t *testing.T) {
 		{Type: token.FALSE, Literal: "false"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.RBRACE, Literal: "}"},
+		{Type: token.INT, Literal: "3"},
+		{Type: token.NEQ, Literal: "!="},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.INT, Literal: "4"},
+		{Type: token.EQ, Literal: "=="},
+		{Type: token.INT, Literal: "4"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.LT_EQ, Literal: "<="},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.INT, Literal: "10"},
+		{Type: token.GT_EQ, Literal: ">="},
+		{Type: token.INT, Literal: "5"},
+		{Type: token.SEMICOLON, Literal: ";"},
 	})
 }

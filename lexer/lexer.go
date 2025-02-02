@@ -23,6 +23,17 @@ func New(input string) *Lexer {
 func (l *Lexer) NextToken() token.Token {
 	l.skipWhitespace()
 
+	// Multi-character token
+	if tokType := l.lookupMultiCharToken(l.char, l.peekChar()); tokType != token.ILLEGAL {
+		literal := string(l.char) + string(l.peekChar())
+		l.advanceReadHead()
+		l.advanceReadHead()
+		return token.Token{
+			Type:    tokType,
+			Literal: literal,
+		}
+	}
+
 	// Syntax token
 	if tokType := l.lookupSingleCharToken(l.char); tokType != token.ILLEGAL {
 		literal := string(tokType)
@@ -107,7 +118,7 @@ func (l *Lexer) skipWhitespace() {
 func (l *Lexer) lookupSingleCharToken(char byte) token.TokenType {
 	switch char {
 	case '=':
-		return token.EQUAL
+		return token.ASSIGN
 	case '+':
 		return token.PLUS
 	case '-':
@@ -136,6 +147,22 @@ func (l *Lexer) lookupSingleCharToken(char byte) token.TokenType {
 		return token.GT
 	case 0:
 		return token.EOF
+	}
+	return token.ILLEGAL
+}
+
+func (l *Lexer) lookupMultiCharToken(char byte, peekChar byte) token.TokenType {
+	if char == '=' && peekChar == '=' {
+		return token.EQ
+	}
+	if char == '!' && peekChar == '=' {
+		return token.NEQ
+	}
+	if char == '<' && peekChar == '=' {
+		return token.LT_EQ
+	}
+	if char == '>' && peekChar == '=' {
+		return token.GT_EQ
 	}
 	return token.ILLEGAL
 }
