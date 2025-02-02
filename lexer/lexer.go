@@ -6,86 +6,156 @@ import (
 )
 
 type Lexer struct {
-	input    string
-	charHead int
-	readHead int
-	char     byte
+	input      string
+	readHead   int
+	charOffset int
+	char       byte
 }
 
 func New(input string) *Lexer {
 	l := &Lexer{
 		input: input,
 	}
-	l.advanceOneChar()
+	l.advanceReadHead()
 	return l
 }
 
 func (l *Lexer) NextToken() token.Token {
-	var tok token.Token
 	l.skipWhitespace()
-	switch l.char {
-	case ';':
-		tok = token.Token{Type: token.SEMICOLON, Literal: ";"}
-	case '=':
-		tok = token.Token{Type: token.ASSIGN, Literal: "="}
-	case '(':
-		tok = token.Token{Type: token.LPAREN, Literal: "("}
-	case ')':
-		tok = token.Token{Type: token.RPAREN, Literal: ")"}
-	case '{':
-		tok = token.Token{Type: token.LBRACE, Literal: "{"}
-	case '}':
-		tok = token.Token{Type: token.RBRACE, Literal: "}"}
-	case '+':
-		tok = token.Token{Type: token.PLUS, Literal: "+"}
-	case ',':
-		tok = token.Token{Type: token.COMMA, Literal: ","}
-	case 0:
-		tok = token.Token{Type: token.EOF, Literal: ""}
-	default:
-		if util.IsLetter(l.char) {
-			ident := l.readIdentifier()
-			tok = token.Token{Type: token.LookupIdent(ident), Literal: ident}
-			return tok
-		} else if util.IsDigit(l.char) {
-			tok = token.Token{Type: token.INT, Literal: l.readNumber()}
-			return tok
-		} else {
-			tok = token.Token{Type: token.ILLEGAL, Literal: string(l.char)}
+
+	// Syntax token
+	if tokType := l.lookupSingleCharToken(l.char); tokType != token.ILLEGAL {
+		literal := string(tokType)
+		l.advanceReadHead()
+		return token.Token{
+			Type:    tokType,
+			Literal: literal,
 		}
 	}
-	l.advanceOneChar()
-	return tok
+
+	// Keyword or identifier
+	if util.IsLetter(l.char) {
+		ident := l.readIdentifier()
+		if tokType := l.lookupKeyword(ident); tokType != token.ILLEGAL {
+			return token.Token{
+				Type:    tokType,
+				Literal: ident,
+			}
+		}
+		return token.Token{
+			Type:    token.IDENTIFIER,
+			Literal: ident,
+		}
+	}
+
+	// Integer literal
+	if util.IsDigit(l.char) {
+		return token.Token{
+			Type:    token.INT,
+			Literal: l.readNumber(),
+		}
+	}
+
+	// Illegal token
+	literal := string(l.char)
+	l.advanceReadHead()
+	return token.Token{
+		Type:    token.ILLEGAL,
+		Literal: literal,
+	}
 }
 
-func (l *Lexer) advanceOneChar() {
+func (l *Lexer) peekChar() byte {
+	if l.readHead >= len(l.input) {
+		return 0
+	}
+	return l.input[l.readHead]
+}
+
+func (l *Lexer) advanceReadHead() {
 	if l.readHead >= len(l.input) {
 		l.char = 0
 	} else {
 		l.char = l.input[l.readHead]
 	}
-	l.charHead = l.readHead
+	l.charOffset = l.readHead
 	l.readHead++
 }
 
 func (l *Lexer) readIdentifier() string {
-	pos := l.charHead
+	pos := l.charOffset
 	for util.IsLetter(l.char) || util.IsDigit(l.char) {
-		l.advanceOneChar()
+		l.advanceReadHead()
 	}
-	return l.input[pos:l.charHead]
+	return l.input[pos:l.charOffset]
 }
 
 func (l *Lexer) readNumber() string {
-	pos := l.charHead
+	pos := l.charOffset
 	for util.IsDigit(l.char) {
-		l.advanceOneChar()
+		l.advanceReadHead()
 	}
-	return l.input[pos:l.charHead]
+	return l.input[pos:l.charOffset]
 }
 
 func (l *Lexer) skipWhitespace() {
 	for util.IsWhitespace(l.char) {
-		l.advanceOneChar()
+		l.advanceReadHead()
 	}
+}
+
+func (l *Lexer) lookupSingleCharToken(char byte) token.TokenType {
+	switch char {
+	case '=':
+		return token.EQUAL
+	case '+':
+		return token.PLUS
+	case '-':
+		return token.MINUS
+	case '*':
+		return token.ASTERISK
+	case '/':
+		return token.SLASH
+	case '!':
+		return token.BANG
+	case ',':
+		return token.COMMA
+	case ';':
+		return token.SEMICOLON
+	case '(':
+		return token.LPAREN
+	case ')':
+		return token.RPAREN
+	case '{':
+		return token.LBRACE
+	case '}':
+		return token.RBRACE
+	case '<':
+		return token.LT
+	case '>':
+		return token.GT
+	case 0:
+		return token.EOF
+	}
+	return token.ILLEGAL
+}
+
+func (l *Lexer) lookupKeyword(ident string) token.TokenType {
+	switch ident {
+	case "fn":
+		return token.FUNCTION
+	case "let":
+		return token.LET
+	case "if":
+		return token.IF
+	case "else":
+		return token.ELSE
+	case "return":
+		return token.RETURN
+	case "true":
+		return token.TRUE
+	case "false":
+		return token.FALSE
+	}
+	return token.ILLEGAL
 }
