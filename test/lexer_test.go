@@ -7,10 +7,23 @@ import (
 	"github.com/Olian04/monkey/token"
 )
 
-func RunTokenTest(t *testing.T, input string, expected []token.Token) {
-	l := lexer.NewLexer(input)
+type ILexer interface {
+	NextToken() token.Token
+}
+
+type Tester interface {
+	Fatalf(format string, args ...any)
+}
+
+type TestContext struct {
+	Name   string
+	Lexer  ILexer
+	Tester Tester
+}
+
+func RunTokenTest(t Tester, lexer ILexer, expected []token.Token) {
 	for _, expectedToken := range expected {
-		gotToken := l.NextToken()
+		gotToken := lexer.NextToken()
 		if gotToken.Type != expectedToken.Type {
 			t.Fatalf("tok.Type is not %q. got=%q", expectedToken.Type, gotToken.Type)
 		}
@@ -22,7 +35,7 @@ func RunTokenTest(t *testing.T, input string, expected []token.Token) {
 
 func TestNextToken(t *testing.T) {
 	input := `=+(){},;`
-	RunTokenTest(t, input, []token.Token{
+	RunTokenTest(t, lexer.New(input), []token.Token{
 		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.PLUS, Literal: "+"},
 		{Type: token.LPAREN, Literal: "("},
@@ -34,54 +47,106 @@ func TestNextToken(t *testing.T) {
 	})
 }
 
-func TestLetExpression(t *testing.T) {
-	input := `let x = 5;`
-	RunTokenTest(t, input, []token.Token{
-		{Type: token.LET, Literal: "let"},
-		{Type: token.IDENT, Literal: "x"},
-		{Type: token.ASSIGN, Literal: "="},
-		{Type: token.INT, Literal: "5"},
-		{Type: token.SEMICOLON, Literal: ";"},
-	})
-}
-
-func TestMultilineLetExpressions(t *testing.T) {
+func TestSmallProgram(t *testing.T) {
 	input := `
-		let x = 5;
-		let y = 10;
-		let foobar = 838383;
+		let five = 5;
+		let ten = 10;
+
+		let add = fn(x, y) {
+			x + y;
+		};
+
+		let result = add(five, ten);
 	`
-	RunTokenTest(t, input, []token.Token{
+	RunTokenTest(t, lexer.New(input), []token.Token{
 		{Type: token.LET, Literal: "let"},
-		{Type: token.IDENT, Literal: "x"},
+		{Type: token.IDENT, Literal: "five"},
 		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.INT, Literal: "5"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.LET, Literal: "let"},
-		{Type: token.IDENT, Literal: "y"},
+		{Type: token.IDENT, Literal: "ten"},
 		{Type: token.ASSIGN, Literal: "="},
 		{Type: token.INT, Literal: "10"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.LET, Literal: "let"},
-		{Type: token.IDENT, Literal: "foobar"},
+		{Type: token.IDENT, Literal: "add"},
 		{Type: token.ASSIGN, Literal: "="},
-		{Type: token.INT, Literal: "838383"},
-		{Type: token.SEMICOLON, Literal: ";"},
-	})
-}
-
-func TestFunctionExpression(t *testing.T) {
-	input := `fn(x) { x + 2; }`
-	RunTokenTest(t, input, []token.Token{
 		{Type: token.FUNCTION, Literal: "fn"},
 		{Type: token.LPAREN, Literal: "("},
 		{Type: token.IDENT, Literal: "x"},
+		{Type: token.COMMA, Literal: ","},
+		{Type: token.IDENT, Literal: "y"},
 		{Type: token.RPAREN, Literal: ")"},
 		{Type: token.LBRACE, Literal: "{"},
 		{Type: token.IDENT, Literal: "x"},
 		{Type: token.PLUS, Literal: "+"},
-		{Type: token.INT, Literal: "2"},
+		{Type: token.IDENT, Literal: "y"},
 		{Type: token.SEMICOLON, Literal: ";"},
 		{Type: token.RBRACE, Literal: "}"},
+		{Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.LET, Literal: "let"},
+		{Type: token.IDENT, Literal: "result"},
+		{Type: token.ASSIGN, Literal: "="},
+		{Type: token.IDENT, Literal: "add"},
+		{Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "five"},
+		{Type: token.COMMA, Literal: ","},
+		{Type: token.IDENT, Literal: "ten"},
+		{Type: token.RPAREN, Literal: ")"},
+		{Type: token.SEMICOLON, Literal: ";"},
 	})
+}
+
+func BenchmarkLexer(b *testing.B) {
+	input := `
+		let five = 5;
+		let ten = 10;
+
+		let add = fn(x, y) {
+			x + y;
+		};
+
+		let result = add(five, ten);
+	`
+	for i := 0; i < b.N; i++ {
+		RunTokenTest(b, lexer.New(input), []token.Token{
+			{Type: token.LET, Literal: "let"},
+			{Type: token.IDENT, Literal: "five"},
+			{Type: token.ASSIGN, Literal: "="},
+			{Type: token.INT, Literal: "5"},
+			{Type: token.SEMICOLON, Literal: ";"},
+			{Type: token.LET, Literal: "let"},
+			{Type: token.IDENT, Literal: "ten"},
+			{Type: token.ASSIGN, Literal: "="},
+			{Type: token.INT, Literal: "10"},
+			{Type: token.SEMICOLON, Literal: ";"},
+			{Type: token.LET, Literal: "let"},
+			{Type: token.IDENT, Literal: "add"},
+			{Type: token.ASSIGN, Literal: "="},
+			{Type: token.FUNCTION, Literal: "fn"},
+			{Type: token.LPAREN, Literal: "("},
+			{Type: token.IDENT, Literal: "x"},
+			{Type: token.COMMA, Literal: ","},
+			{Type: token.IDENT, Literal: "y"},
+			{Type: token.RPAREN, Literal: ")"},
+			{Type: token.LBRACE, Literal: "{"},
+			{Type: token.IDENT, Literal: "x"},
+			{Type: token.PLUS, Literal: "+"},
+			{Type: token.IDENT, Literal: "y"},
+			{Type: token.SEMICOLON, Literal: ";"},
+			{Type: token.RBRACE, Literal: "}"},
+			{Type: token.SEMICOLON, Literal: ";"},
+			{Type: token.LET, Literal: "let"},
+			{Type: token.IDENT, Literal: "result"},
+			{Type: token.ASSIGN, Literal: "="},
+			{Type: token.IDENT, Literal: "add"},
+			{Type: token.LPAREN, Literal: "("},
+			{Type: token.IDENT, Literal: "five"},
+			{Type: token.COMMA, Literal: ","},
+			{Type: token.IDENT, Literal: "ten"},
+			{Type: token.RPAREN, Literal: ")"},
+			{Type: token.SEMICOLON, Literal: ";"},
+		})
+	}
 }

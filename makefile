@@ -5,6 +5,10 @@ r: run
 run:
 	go test -v ./test/...
 
+b: benchmark
+benchmark:
+	go test -v -bench=. ./test/...
+
 # Install dependencies
 i: install
 install:
